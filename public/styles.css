@@ -1,0 +1,330 @@
+body {
+    padding: 0;
+    margin: 0;
+    font-family: helvetica, sans-serif;
+    background-color: rgb(48, 46, 46);
+    color: white;
+    text-align: center;
+    text-shadow: 1px 1px black;
+}
+
+form {
+    border: 2px solid whitesmoke;
+    border-radius: 5px;
+    display: inline-block;
+    padding: 10px;
+}
+
+header {
+    padding: 30px;
+}
+
+section {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+}
+
+a:hover {
+    text-shadow: .1px .1px 1.8px whitesmoke, -.1px -.1px 1.8px whitesmoke, -.1px .1px 1.8px whitesmoke, .1px -.1px 1.8px whitesmoke;
+}
+
+a:active {
+    color: grey;
+}
+
+ul {
+    list-style-type: none;
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    margin: auto;
+}
+
+abbr {
+    text-decoration: none;
+}
+
+table, th, td {
+    border:1px solid white;
+}
+
+.playerDraft {
+    border: 2px solid white;
+    padding: 10px;
+    margin:5px;
+    display: inline-block;
+}
+
+#filter {
+    border-radius: 5px; 
+    height: 18px;
+    font-size: 16px;
+    width: 175px;
+    box-shadow: 1px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+button {
+    margin: auto;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    border: 1px solid white;
+    border-radius: 5px;
+    background-color: rgb(48, 46, 46);
+    color: white;
+    text-shadow: 1px 1px black;
+    font-size: 15px;
+    box-shadow: 2px 2px black;
+    cursor: pointer;
+}
+
+#restart, #beatFound, #foundList {
+    display: none;
+}
+
+button:hover {
+    box-shadow: 1px 1px 3px whitesmoke, -1px -1px 3px whitesmoke, -1px 1px 3px whitesmoke, 1px -1px 3px whitesmoke;
+}
+
+button:active {
+    transform: translateY(2px);
+    box-shadow: 1px 1px black;
+    border: 1px solid rgb(99, 94, 94);
+    color: grey;
+}
+
+#guidedata {
+    margin: auto;
+    text-align: center;
+}
+
+@media only screen and (max-width: 800px) { 
+    #guidedata {
+        width: 80%
+    }
+}
+
+@media only screen and (min-width: 801px) { 
+    #guidedata {
+        width: 60%
+    }
+}
+
+input {
+    border: .5px solid black;
+}
+
+input:hover {
+    box-shadow: 1px 1px 3px whitesmoke, -1px -1px 3px whitesmoke, -1px 1px 3px whitesmoke, 1px -1px 3px whitesmoke;
+}
+
+.pokemon {
+    margin: auto;
+    width: 325px;
+    height: 110px;
+    background-color: grey;
+    color: white;
+    border: 1px solid white;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.pokemon:hover, #top:hover {
+    box-shadow: 1px 1px 3px whitesmoke, -1px -1px 3px whitesmoke, -1px 1px 3px whitesmoke, 1px -1px 3px whitesmoke;
+    cursor: pointer;
+}
+
+.pokemon:active, #top:active {
+    transform: translateY(1px);
+    border: 1px solid rgb(99, 94, 94);
+    cursor: pointer;
+}
+
+#win {
+    color: greenyellow;
+}
+
+#lose {
+    color: red;
+}
+
+#m {
+    color: yellow;
+}
+
+.monInfo {
+    padding: 0; 
+    margin: 0;
+    cursor: pointer;
+}
+
+.item {
+    margin: auto; 
+    padding: 0;
+    margin: 0;
+}
+
+.mon {
+    display: inline-block;
+    margin: 0px;
+    padding: 0px;
+}
+
+.draftLeague {
+    display: inline-block;
+    text-decoration: underline;
+    padding: 5px;
+}
+
+.dl {
+    display: inline-block;
+    padding: 2px;
+}
+
+.leagueInfoButtons {
+    display: inline-block;
+    padding: 5px;
+    margin: 5px;
+}
+
+.leagueInfo {
+    display: inline-block;
+}
+
+.leagueInfo p {
+    display: inline-block;
+    padding: 5px;
+}
+
+.staff-tools {
+    display: inline-block;
+}
+
+.staff-tools p {
+    display: inline-block;
+    padding: 5px;
+}
+
+
+.leagueApp {
+    border: 2px solid white;
+    padding: 10px;
+    display: inline-block;
+}
+
+.points {
+    color: deepskyblue;
+}
+
+.week {
+    border: 2px solid white;
+    padding: 10px;
+    margin:5px;
+    display: inline-block;
+}
+
+.drafted {
+    color: red;
+    text-decoration: Line-through;
+}
+
+.undrafted {
+    color: lime;
+}
+
+#registrationsInfo {
+    display: none;
+}
+
+#playersInfo {
+    display: none;
+}
+
+#pokemonInfo {
+    display: none;
+}
+
+#playersInfo {
+    display: none;
+}
+
+#divisionsInfo {
+    display: none;
+}
+
+#matchupsInfo {
+    display: none;
+}
+
+#registrationsInfoStaff {
+    display: none;
+}
+
+#playersInfoStaff {
+    display: none;
+}
+
+#pokemonInfoStaff {
+    display: none;
+}
+
+#playersInfoStaff {
+    display: none;
+}
+
+#divisionsInfoStaff {
+    display: none;
+}
+
+#matchupsInfoStaff {
+    display: none;
+}
+
+#cost {
+    display: block;
+}
+
+#modInfoStaff {
+    display: none;
+}
+
+#budgetInfo {
+    display: none;
+}
+
+#monRequirements {
+    display: none;
+}
+
+#teraInfo {
+    display: none;
+}
+
+#staffMatchupsInfo {
+    display: none;
+}
+
+#editingMatchups {
+    display: none;
+}
+
+#draftAsTera {
+    display: none;
+}
+
+#top {
+    position: fixed;
+    bottom: 0px;
+    left: 10px;
+    padding: 3px;
+}

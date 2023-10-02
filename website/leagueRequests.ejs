@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<body>
+    <%- include("./partials/header.ejs") %>
+    <h2>Draft League Apps:</h2>
+    <nav>
+        <% if (apps.length > 0) { %>
+            <% for (let i=0; i < apps.length; i++) { %>
+                <% if (apps[i].status === "pending") { %>
+                <section class = "dl">
+                    <div class="leagueApp">
+                        league name: <%= apps[i].name %>
+                        <br>
+                        owner: <%= apps[i].owner %>
+                        <br>
+                        divisions: 
+                        <% for (let j = 0; j < apps[i].divisions.length; j++) { %>
+                            <%= apps[i].divisions[j] %>;&nbsp;
+                        <% } %>
+                        <br>
+                        <button onclick="app(<%= i %>,'accept')">Accept</button><button onclick="app(<%= i %>,'reject')">Reject</button>
+                    </div>
+
+                </section>
+                <br/>
+                <% } %>
+            <% } %>
+        <% } else { %>
+            <h3>There are no requests to display...</h3>
+        <% } %>
+    </nav>
+    <script type="text/javascript" src="loggedIn.js"></script>
+    <script>
+        async function app(num, status) {
+            const info =    {
+                app: Number(num), 
+                dec: status
+            }
+            const data = {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(info)
+            }
+            console.log(data.body);
+            try {
+                const response = await fetch("/leagueStatus", data);
+                //const result = await response.text();
+                console.log("Success:");
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+    </script>
+</body>
+</html>

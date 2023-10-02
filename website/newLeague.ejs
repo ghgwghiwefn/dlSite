@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<body>
+    <%- include("./partials/header.ejs") %>
+    <div>
+        <p>League Form:</p>
+        <p>
+            <label for="name">Draft League Name:</label>
+            <br>
+            <input type="text" id="name" name="name" required>
+            <br>
+        </p>
+        <p>
+            <label for="leagueDiscord">Draft League Discord Server:</label>
+            <br>
+            <input type="text" id="discord" name="discord" required>
+            <br>
+        </p>
+        <p>
+            <label for="division">Divisions:</label>
+            <br>
+            <input type="text" id="division" name="divison" required>
+            <br>
+            <button onclick="addDivision()">
+                Add Division
+            </button>
+            <br>
+            <p id="divisions"></p>
+        </p>
+        <button onclick="submitLeagueForm()">Submit</button>
+        <p id="submitted">-</p>
+        <p>note: if you are not logged in this will not be processed.</p>
+    </div>
+    <%- include("./partials/footer.ejs") %>
+</body>
+<script type="text/javascript" src="loggedIn.js"></script>
+<script>
+    let divisions = [];
+    function addDivision() {
+        let division = document.getElementById('division').value;
+        if (division.length === 0) {
+            alert("Division field is empty.");
+        } else {
+            for (let i = 0; i < divisions.length; i++) {
+                if (divisions[i] === division) {
+                    alert("That division is already added");
+                } else {
+                    
+                }
+            }
+            divisions.push(division);
+            let text = "";
+            for (let i = 0; i < divisions.length; i++) {
+                text += divisions[i] + "<br>";
+            }
+            document.getElementById('divisions').innerHTML = text;
+            document.getElementById('division').value = "";
+        }
+    }
+
+    function submitLeagueForm() {
+        let name = document.getElementById('name').value;
+        let discord = document.getElementById('discord').value;
+        if (name.length === 0) {
+            alert("Give the league a name");
+        } else {
+            console.log("submitting");
+            if (divisions.length === 0) {
+                alert("Add a division");
+            } else {
+                if (discord.length === 0) {
+                    alert("Add a discord server");
+                } else {
+                    const leagueInfo = {
+                        "name": name,
+                        "owner": username,
+                        "discord": discord,
+                        "divisions": divisions
+                    }
+                    const options = {
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(leagueInfo)
+                    };
+
+                    fetch('/new-league-request', options);
+                    document.getElementById('name').value = "";
+                    document.getElementById('divisions').innerHTML = "";
+                    document.getElementById('discord').value = "";
+                    document.getElementById('submitted').innerHTML = "Your application was submitted";
+                    divisions = [];
+                }
+            }
+        }
+    }
+loggedIn();
+</script>
+</html>

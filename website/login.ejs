@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<body>
+    <%- include("./partials/header.ejs") %>
+    <form action="/login-user" method="POST">
+        <p>Login:</p>
+        <p>
+            <label for="username">Username:</label>
+            <br>
+            <input type="text" id="username" name="username" required>
+            <br>
+        </p>
+        <p>
+            <label for="password">Password:</label>
+            <br>
+            <input type="text" id="password" name="password" required>
+            <br>
+        </p>
+        <button>Submit</button>
+        <br>
+        <%= failed %>
+    </form>
+    <hr/>
+    <form action="/add-user" method="POST">
+        <p>Sign Up:</p>
+        <p>
+            <label for="username">Username:</label>
+            <br>
+            <input type="text" id="username" name="username" required>
+            <br>
+        </p>
+        <p>
+            <label for="password">Password:</label>
+            <br>
+            <input type="text" id="password" name="password" required>
+            <br>
+        </p>
+        <p>
+            <label for="discord">Discord Username:</label>
+            <br>
+            <input type="text" id="discord" name="discord" required>
+            <br>
+        </p>
+        <p>
+            <label for="timeZone">Timezone:</label>
+            <br>
+            <select id="timeZone" name="timeZone" required>
+                <option value="GMT -12">GMT -12</option>
+                <option value="GMT -11">GMT -11</option>
+                <option value="GMT -10">GMT -10</option>
+                <option value="GMT -9">GMT -9</option>
+                <option value="GMT -8">GMT -8</option>
+                <option value="GMT -7">GMT -7</option>
+                <option value="GMT -6">GMT -6</option>
+                <option value="GMT -5">GMT -5</option>
+                <option value="GMT -4">GMT -4</option>
+                <option value="GMT -3">GMT -3</option>
+                <option value="GMT -2">GMT -2</option>
+                <option value="GMT -1">GMT -1</option>
+                <option value="GMT 0">GMT 0</option>
+                <option value="GMT +1">GMT +1</option>
+                <option value="GMT +2">GMT +2</option>
+                <option value="GMT +3">GMT +3</option>
+                <option value="GMT +4">GMT +4</option>
+                <option value="GMT +5">GMT +5</option>
+                <option value="GMT +6">GMT +6</option>
+                <option value="GMT +7">GMT +7</option>
+                <option value="GMT +8">GMT +8</option>
+                <option value="GMT +9">GMT +9</option>
+                <option value="GMT +10">GMT +10</option>
+                <option value="GMT +11">GMT +11</option>
+                <option value="GMT +12">GMT +12</option>
+                <option value="GMT +13">GMT +13</option>
+                <option value="GMT +14">GMT +14</option>
+            </select>
+            <br>
+        </p>
+        <button>Submit</button>
+        <br>
+        <%= failed2 %>
+    </form>
+    <%- include("./partials/footer.ejs") %>
+    <script type="text/javascript" src="loggedIn.js"></script>
+</body>
+</html>

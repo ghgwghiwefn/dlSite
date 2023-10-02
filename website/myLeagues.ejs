@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<body>
+    <%- include("./partials/header.ejs") %>
+    <h2>My Leagues:</h2>
+    <nav>
+        <% if (ownedLeagues.length > 0) { %>
+            <p>Leagues you own:</p>
+            <% for (let i = 0; i < ownedLeagues.length; i++) { %>
+                <section class = "dl">
+                    <a href="/drafts/<%= ownedLeagues[i].id %>">
+                        <p class="draftLeague"><%= ownedLeagues[i].name %></p>
+                    </a>
+                </section>
+                <br>
+            <% } %>
+            <hr>
+        <% } %>
+        <% if (inLeagues.length > 0) { %>
+            <h3>Leagues you are playing in:</h3>
+            <% for (let i = 0; i < inLeagues.length; i++) { %>
+                <section class = "dl">
+                    <a href="/drafts/<%= inLeagues[i].id %>">
+                        <p class="draftLeague"><%= inLeagues[i].name %></p>
+                    </a>
+                </section>
+                <br>
+            <% } %>
+            <hr>
+        <% } %>
+        <% if (leaguesMod.length > 0) { %>
+            <h3>Leagues you are staff in:</h3>
+            <% for (let i = 0; i < leaguesMod.length; i++) { %>
+                <section class = "dl">
+                    <a href="/drafts/<%= leaguesMod[i].id %>">
+                        <p class="draftLeague"><%= leaguesMod[i].name %></p>
+                    </a>
+                </section>
+                <br>
+            <% } %>
+            <hr>
+        <% } %>
+        <% if (leagueApps.length > 0) { %>
+            <h3>Your league applications:</h3>
+            <% for (let i = 0; i < leagueApps.length; i++) { %>
+                <section class = "dl">
+                    <p class="draftLeague"><%= leagueApps[i].name %>; status: <%= leagueApps[i].status %></p>
+                </section>
+                <br>
+            <% } %>
+            <hr>
+        <% } %>
+    </nav>
+    <script type="text/javascript" src="loggedIn.js"></script>
+</body>
+</html>

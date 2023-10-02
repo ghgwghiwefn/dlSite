@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<body>
+    <%- include("./partials/header.ejs") %>
+    <nav>
+        <section>
+            <h2><a href="drafts.ejs">Unstarted Draft Leagues</a></h2>
+        </section>
+        <hr />
+        <section>
+            <ul>
+                <li><h2><a href="myLeagues.ejs">My Leagues</a></h2></li>
+            </ul>
+        </section>
+        <% if (perms === "mod" || perms === "admin") { %>
+            <hr />
+            <section>
+                <ul>
+                    <% if (perms === "admin" || perms === "mod") { %>
+                        <li>
+                            <a href="/leagueRequests.ejs"><button>Current Draft League Requests</button></a>
+                        </li>
+                    <% } %>
+                    <% if (perms === "admin") { %>
+                        <li>
+                            <form action="/makeMod" method="POST">
+                            <label for="makeMod">Set User To mod</label>
+                            <input id="makeMod" name="makeMod" type="text">
+                            <button>Promote</button>
+                            </form>
+                        </li>
+                    <% } %>
+                </ul>
+            </section>
+        <% } %>
+    </nav>
+    <script type="text/javascript" src="loggedIn.js"></script>
+    <% if (perms === "admin") { %>
+        <script>
+            async function makeMod() {
+                console.log(document.getElementById('makeMod').value);
+                const data = {
+                    method: "POST",
+                    body: document.getElementById('makeMod').value,
+                }
+                console.log(data);
+                try {
+                    const response = await fetch("/makeMod", data);
+                    const result = await response.text();
+                    console.log("Success:", result);
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+        </script>
+    <% } %>
+</body>
+</html>

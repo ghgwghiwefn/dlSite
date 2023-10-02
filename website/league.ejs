@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include("./partials/head.ejs") %>
+<% let pokemon_list_copy = [...draftDetails.pokemon]; %>
+<body>
+    <p id="leagueID" style="display:none"><%= draftDetails._id %></p>
+    <p id="leagueDivs" style="display:none"><%= draftDetails.divisions.length %></p>
+    <header>
+        <h1><a href="../index.ejs">Home</a></h1>
+    </header>
+    <p><a href="../login.ejs"><span id="account-name">Login/Signup</span></a></p>
+    <hr />
+    <% if (perms === "mod" || perms === "admin") { %>
+        <br>
+        <p>Staff Tools</p>
+        <button id="editMatchups" onclick="showStaffInfo('editMatchups')">Edit Matchups</button>
+        <% if (draftDetails.totalBudget > 0) { %>
+            <button id="makePlayer" onclick="showStaffInfo('makePlayer')">Add Player</button>
+        <% } else if (perms === "admin") { %>
+            <button id="finalizeBudgetButton" onclick="showStaffInfo('finalizeBudget')">Edit Budget</button>
+        <% } %>
+        <% if (!draftDetails.started) { %>
+            <button id="editPokemon" onclick="showStaffInfo('editPokemon')">Edit Pokemon</button>
+        <% } %>
+        <% if (!draftDetails.draft && !draftDetails.started) { %>
+            <button id="editTera" onclick="showStaffInfo('editTera')">Edit Tera Info</button>
+            <button id="randomized" onclick="randomizeDraft()">Randomize Draft Order</button>
+        <% } %>
+        <% if (perms === "admin") { %>
+            <button id="makeModButton" onclick="showStaffInfo('makeMod')">Make League Mod</button>
+            <% if (!draftDetails.readyForSignups) { %>
+                <button id="readyForSignupsButton" onclick="readyForSignups()">Set Ready for Signups</button>
+            <% } %>
+            <% if (draftDetails.private) { %>
+                <button id="private" onclick="setPrivateToggle()">Make League Public</button>
+            <% } else { %>
+                <button id="private" onclick="setPrivateToggle()">Make League Private</button>
+            <% } %>
+            <% if (!draftDetails.draft && !draftDetails.started) { %>
+                <button id="editMonLimit" onclick="showStaffInfo('monRequirements')">Edit Mon # Requirement</button>
+            <% } %>
+        <% } %>
+        <% if (!draftDetails.started && !draftDetails.draft && draftDetails.readyForSignups && perms === "admin") { %>
+            <br>
+            <button id="startDraft" onclick="startDraft()">Start Draft</button>
+        <% } else if (draftDetails.draft && draftDetails.readyForSignups && perms === "admin") { %>
+            <br>
+            <button id="startLeague" onclick="startLeague()">End Draft and Start League</button>
+        <% } else if (draftDetails.Started && perms === "admin") { %>
+            <button id="startLeague" onclick="startLeague()">Move to Next Week</button>
+        <% } %>
+        <br>
+        <% if (draftDetails.totalBudget > 0) { %>
+            <div id="registrationsInfoStaff" class="staff-tools">
+                <% if (draftDetails.draft || draftDetails.started) { %>
+                    <button id="addSub" onclick="addSub()">Add as Sub for: </button>
+                    <input id="subPlayer" type="text">
+                <% } else { %>
+                    <p>Put Player in Division: <select id="divSelector" onchange="setDiv(this.value)">
+                        <% for (let i = 0; i < draftDetails.divisions.length; i++) { %>
+                            <option value="<%- i %>"><%= draftDetails.divisions[i].name %></option>
+                        <% } %>
+                    </select></p>
+                <% } %>
+                <br>
+                <p id="playersToAdd"></p>
+                <br>
+                <% if (!draftDetails.draft) { %>
+                    <button onclick="updatePlayers()">Update</button>
+                    <br>
+                <% } %>
+                <% for (let i = 0; i < draftDetails.registrations.length; i++) { %>
+                    <button onclick="addPlayer('<%= draftDetails.registrations[i] %>')"><p> <%= draftDetails.registrations[i] %></p></button>
+                <% } %>
+            </div>
+        <% } else { %>
+            <% if (perms === "admin") { %>
+                <div id="budgetInfo" class="staff-tools">
+                    <p id="budgetEntered"></p>
+                    <input id="budget" type="text">
+                    <button id="finalizeBudget" onclick="finalizeBudget()">Finalize Budget</button>
+                </div>
+            <% } %>
+        <% } %>
+        <% if (!draftDetails.draft) { %>
+            <div id="pokemonInfoStaff" class="staff-tools">
+                <hr>
+                <button onclick="editPokemon('add')">Add Pokemon</button>
+                <button onclick="editPokemon('delete')">Delete Pokemon</button>
+                <br>
+                <button onclick="updatePokemon()">Send changes to server</button>
+                <br>
+                <p>Pokemon to edit (note: cannot delete or edit pokemon who haven't been added):</p>
+                <br>
+                <p>Mode Selected: <span id="mode">Add</span></p>
+                <br>
+                <p id="pokemonToEdit"></p>
+                <br>
+                <input type="text" id="pokemonName" placeholder="Pokemon Name" required>
+                <div id="cost">
+                    <input type="text" id="pokemonCost" placeholder="Cost (number)">
+                </div>
+                <br>
+                <button onclick="updatePokemonLocal()">Edit</button>
+                <br>
+                <% let pokemon_copy = [...draftDetails.pokemon]; %>
+                <% while (pokemon_copy.length > 0) { %>
+                    <% let highest = pokemon_copy[0].cost %>
+                    <% for (let i = 0; i < pokemon_copy.length; i++) { %>
+                        <% if (pokemon_copy[i].cost > highest) { %>
+                            <% highest = pokemon_copy[i].cost %>
+                        <% } %>
+                    <% } %>
+                    <div><span style="color:deepskyblue"><%= highest %> pointers:</span></div>
+                    <p>
+                    <% for (let i = pokemon_copy.length - 1; i >= 0; i--) { %>
+                        <% if (pokemon_copy[i].cost === highest) { %>
+                            <%= pokemon_copy[i].name %>,&nbsp;
+                            <% pokemon_copy.splice(i, 1) %>
+                        <% } %>
+                    <% } %>
+                    </p>
+                <% } %>
+                
+            </div>
+        <% }  %>
+        <% if (perms === "admin") { %>
+            <div id="modInfoStaff" class="staff-tools">
+                <p>Make Mod: <span id="modMade"></span></p>
+                <br>
+                <input type="text" id="makeUserMod" placeholder="username">
+                <br><br>
+                <button onclick="makeDraftMod()">Update</button>
+                
+            </div>
+            <% if (!draftDetails.draft) { %>
+                <div id="monRequirements" class="staff-tools">
+                    <p id="monsLimitMessage">Edit Mon Drafts Requirements: Currently <%= draftDetails.monsLimit[0] %> minimum and <%= draftDetails.monsLimit[1] %> maximum</p>
+                    <br>
+                    <input type="text" id="lowerLimit" placeholder="lower limit">
+                    <input type="text" id="upperLimit" placeholder="upper limit">
+                    <br><br>
+                    <button onclick="editMonLimit()">Update</button>
+                    
+                </div>
+                <div id="teraInfo" class="staff-tools">
+                    <p id="teraInfoBox">Edit Tera Costs: Currently <%= draftDetails.teraCost %> points for a tera captian, and only <%= draftDetails.teraLimit %> pointers and below can tera. (0 = no limit on either)</p>
+                    <br>
+                    <input type="text" id="teraCost" placeholder="Tera Cost">
+                    <input type="text" id="teraLimit" placeholder="Tera Limit">
+                    <br><br>
+                    <button onclick="editTeraInfo()">Update</button>
+                    
+                </div>
+            <% } %>
+        <% } %>
+        <div id="staffMatchupsInfo" class="staff-tools">
+            <% if (perms === "admin") { %>
+            <select id="playoffSelector" onchange="setWeek(this.value)">
+                <option value="0">Regular</option>
+                <option value="1">Playoff</option>
+            </select>
+            <button id="addWeek" onclick="addWeek()">Add Week</button>
+            <p id="weekAdded">Adds a week to each division</p>
+            <br>
+            <button id="setMatchups" onclick="setMatchups()">Set Regular Season Matchups</button>
+            <br>
+            <% } %>
+            <button id="getMatchupInfo" onclick="getMatchupInfo()">Edit Matchup Info</button>
+            <br>
+            <div id="editingMatchups">
+                <p>Division to Edit</p>
+                <select onchange="setEditMatchups(this.value, 'division')">
+                    <% for (let i = 0; i < draftDetails.divisions.length; i++) { %>
+                        <option value="<%= i %>"><%= draftDetails.divisions[i].name %></option>
+                    <% } %>
+                </select>
+                <br>
+                <p>Week to Edit</p>
+                <select onchange="setEditMatchups(this.value, 'week')">
+                    <% for (let i = 0; i < draftDetails.weeks[0].matchups.length; i++) { %>
+                        <option value="<%= i %>">Week <%= i+1 %></option>
+                    <% } %>
+                </select>
+                <br>
+                <p>Matchup to Edit</p>
+                <select onchange="setEditMatchups(this.value, 'matchup')">
+                    <% if (draftDetails.weeks[0].matchups.length > 0) { %>
+                        <% for (let i = 0; i < draftDetails.weeks[0].matchups[0].length; i++) { %>
+                            <option value="<%= i %>">Matchup <%= i+1 %></option>
+                        <% } %>
+                    <% } %>
+                </select>
+                <br>
+                <p>Choose how to edit the matchup (Empties won't be edited)</p>
+                <br>
+                <input id="player1" type="text" placeholder="Player 1 Username">
+                <br><br>
+                <input id="player2" type="text" placeholder="Player 2 Username">
+                <br><br>
+                <input id="player0Win" type="radio" onclick="setEditMatchups('0', 'whoWon')">
+                <label for="player0Win">Neither Won</label>
+                <input id="player1Win" type="radio" onclick="setEditMatchups('1', 'whoWon')">
+                <label for="player1Win">Player 1 Won</label>
+                <input id="player2Win" type="radio" onclick="setEditMatchups('2', 'whoWon')">
+                <label for="player2Win">Player 2 Won</label>
+                <br><br>
+                <input id="replay" type="text" placeholder="Replay Link 1" value="">
+                <br>
+                <input id="replay2" type="text" placeholder="Replay Link 2" value="">
+                <br>
+                <input id="replay3" type="text" placeholder="Replay Link 3" value="">
+                <br>
+                <button id="updateMatchups" onclick="addNewMatchup()">Add Change</button>
+                <button id="updatePoffMatchups" onclick="addNewPoffMatchup()">Add Matchups to Playoffs</button>
+                <br>
+                <p id="changedMatchups">
+
+                </p>
+                <br>
+                <button id="matchupToServer" onclick="updateMatchups()">Send changes to server</button>
+            </div>
+            <br>
+            <% for (let i = 0; i < draftDetails.weeks.length; i++) { %>
+                <br>
+                <p style="color:deepskyblue"><%= draftDetails.divisions[i].name %></p>
+                <br>
+                <p style="color:rgb(255, 217, 0)">Regular Season:</p>
+                <br>
+                <% let playoffs = false; %>
+                <% for (let j = 0; j < draftDetails.weeks[i].matchups.length; j++) { %>
+                    <% if (draftDetails.weeks[i].matchups[j][0][0] === "playoff" && !playoffs) { %> 
+                        <br>
+                        <p style="color:rgb(255, 217, 0)">Playoffs:</p>
+                        <% playoffs = true; %>
+                        <br>
+                    <% } %>
+                    <div class="week">
+                    <p style="color:chartreuse">Week: <%= j+1 %></p>
+                    <% for (let k = 0; k < draftDetails.weeks[i].matchups[j].length; k++) { %>
+                        <br>
+                        <p>
+                            <%= draftDetails.weeks[i].matchups[j][k][1] %> vs <%= draftDetails.weeks[i].matchups[j][k][2] %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][3] === 1) { %>
+                                <br>
+                                Winner: <%= draftDetails.weeks[i].matchups[j][k][1] %> 
+                            <% } else if (draftDetails.weeks[i].matchups[j][k][3] === 2) { %>
+                                <br>
+                                Winner: <%= draftDetails.weeks[i].matchups[j][k][2] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][4] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][4] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][5] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][5] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][6] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][6] %>
+                            <% } %>
+                        </p>
+                    <% } %>
+                    </div>
+                <% } %>
+            <% } %>
+        </div>
+        <hr>
+    <% } %>
+    <h2><%= draftDetails.name %>:</h2>
+    <p> Owned by: <%= draftDetails.owner %></p>
+    <p><%= draftDetails.leagueDiscord %></p>
+    <% if (loggedIn) { %>
+        <br/>
+        <button id="registerButton" onclick="register()">Register for this league</button>
+    <% } %>
+    <nav>
+        <button id="registrationsButton" class="leagueInfoButtons" onclick="showInfo('registrations')">
+            Show Registrations
+        </button>
+        <button id="playersButton" class="leagueInfoButtons" onclick="showInfo('players')">
+            Show Players
+        </button>
+        <button id="pokemonButton" class="leagueInfoButtons" onclick="showInfo('pokemon')">
+            Show pokemon tiers
+        </button>
+        <button id="matchupsButton" class="leagueInfoButtons" onclick="showInfo('matchups')">
+            Show Player Info
+        </button>
+        <div id="registrationsInfo" class="leagueInfo">
+            <p>Registrations: </p>
+            <br>
+            <% for (let i = 0; i < draftDetails.registrations.length; i++) { %>
+                <p> <%= draftDetails.registrations[i] %></p>
+            <% } %>
+            
+        </div>
+        <div id="playersInfo" class="leagueInfo">
+            <p>Players: </p>
+            <br>
+            <% for (let i = 0; i < draftDetails.divisions.length; i++) { %>
+                <p style="color:deepskyblue"><%= draftDetails.divisions[i].name %>:</p>
+                <br>
+                <p>
+                <% if (draftDetails.divisions[i].draftOrder.length > 0) { %>
+                    <% for (let j = 0; j < draftDetails.divisions[i].draftOrder.length; j++) { %>
+                        <%= draftDetails.divisions[i].draftOrder[j] %>,&nbsp;
+                    <% } %>
+                <% } %>
+                </p>
+                <br>
+            <% } %>
+            
+        </div>
+        <div id="pokemonInfo" class="leagueInfo">
+            <p>Pokemon: </p>
+            <br>
+            <% while (draftDetails.pokemon.length > 0) { %>
+                <% let highest = draftDetails.pokemon[0].cost %>
+                <% for (let i = 0; i < draftDetails.pokemon.length; i++) { %>
+                    <% if (draftDetails.pokemon[i].cost > highest) { %>
+                        <% highest = draftDetails.pokemon[i].cost %>
+                    <% } %>
+                <% } %>
+                <div><span style="color:deepskyblue"><%= highest %> pointers:</span></div>
+                <p>
+                <% for (let i = draftDetails.pokemon.length - 1; i >= 0; i--) { %>
+                    <% if (draftDetails.pokemon[i].cost === highest) { %>
+                        <%= draftDetails.pokemon[i].name %>,&nbsp;
+                        <% draftDetails.pokemon.splice(i, 1) %>
+                    <% } %>
+                <% } %>
+                </p>
+            <% } %>
+        </div>
+        <div id="matchupsInfo" class="leagueInfo">
+            <p>Player Info: </p>
+            <br>
+            <% for (let i = 0; i < draftDetails.players.length; i++) { %>
+                <p>
+                    <%= draftDetails.players[i].name %>; <%= draftDetails.players[i].discord %>; <%= draftDetails.players[i].timeZone %>
+                    <br>
+                </p>
+            <% } %>
+        </div>
+        <% if (draftDetails.draft || draftDetails.started) { %>
+            <div id="allDrafts">
+                <% for (let i = 0; i < draftDetails.divisions.length; i++) { %>
+                    <hr>
+                    <div id="<%= draftDetails.divisions[i].name %>">
+                        <h2 style="color:deepskyblue"><%= draftDetails.divisions[i].name %>&nbsp;Draft</h2>
+                        <% if (draftDetails.draft) { %>
+                            <p id="currentDrafter<%= draftDetails.divisions[i].name %>">Current drafter: <span id="currentDrafterText <%= draftDetails.divisions[i].name %>"><%= draftDetails.divisions[i].currentDrafter %></span></p>
+                            <% if (perms === "mod" || perms === "admin") { %>
+                                <button onclick="forceSkip('<%= i %>')">Force Skip This Players Turn</button>
+                            <% } %>
+                        <% } %>
+                        <p>* = Tera Captain</p>
+                        <% for (let j = 0; j < draftDetails.divisions[i].draftOrder.length; j++) { %>
+                            <div class="playerDraft" id="<%= draftDetails.divisions[i].name %> <%= j %>">
+                                <p style="border-bottom:1px solid white" id="<%= draftDetails.divisions[i].name %> <%= j %> 0"><%= draftDetails.divisions[i].draftOrder[j] %></p>
+                                <% for (let k = 0; k < draftDetails.players.length; k++) { %>
+                                    <% if (draftDetails.players[k].name === draftDetails.divisions[i].draftOrder[j]) { %>
+                                        <p id="<%= draftDetails.divisions[i].name %> <%= j %> 1">
+                                        <% for (let l = 0; l < draftDetails.players[k].roster.length; l++) { %>
+                                            <%= draftDetails.players[k].roster[l] %>
+                                            <% for (let m = 0; m < draftDetails.players[k].teraCaps.length; m++) { %>
+                                                <% if (draftDetails.players[k].roster[l] === draftDetails.players[k].teraCaps[m]) { %>
+                                                    *
+                                                <% } %>
+                                            <% } %>
+                                            <br>
+                                        <% } %>
+                                        </p>
+                                        <p style="border-top:1px solid white;" id="<%= draftDetails.divisions[i].name %> <%= j %> 2">
+                                            Budget: <%= draftDetails.players[k].budget %>
+                                        </p>
+                                    <% } %>
+                                <% } %>
+                            </div>
+                        <% } %>
+                    </div>
+                    <br>
+                    <% if (draftDetails.started) { %>
+                        <p style="color:rgb(255, 217, 0)">Regular Season:</p>
+                        <br>
+                        <% let playoffs = false; %>
+                        <% for (let j = 0; j < draftDetails.weeks[i].matchups.length; j++) { %>
+                            <% if (draftDetails.weeks[i].matchups[j][0][0] === "playoff" && !playoffs) { %> 
+                                <br>
+                                <p style="color:rgb(255, 217, 0)">Playoffs:</p>
+                                <% playoffs = true; %>
+                                <br>
+                            <% } %>
+                            <div class="week">
+                            <p style="color:chartreuse">Week: <%= j+1 %></p>
+                            <% for (let k = 0; k < draftDetails.weeks[i].matchups[j].length; k++) { %>
+                                <br>
+                                <p>
+                                    <%= draftDetails.weeks[i].matchups[j][k][1] %> vs <%= draftDetails.weeks[i].matchups[j][k][2] %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][3] === 1) { %>
+                                <br>
+                                Winner: <%= draftDetails.weeks[i].matchups[j][k][1] %> 
+                            <% } else if (draftDetails.weeks[i].matchups[j][k][3] === 2) { %>
+                                <br>
+                                Winner: <%= draftDetails.weeks[i].matchups[j][k][2] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][4] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][4] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][5] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][5] %>
+                            <% } %>
+                            <% if (draftDetails.weeks[i].matchups[j][k][6] != "") { %>
+                                <br>
+                                <%= draftDetails.weeks[i].matchups[j][k][6] %>
+                            <% } %>
+                                </p>
+                            <% } %>
+                            </div>
+                        <% } %>
+                    <% } %>
+                    <% if (draftDetails.draft) { %>
+                        <button onclick="draftAsTera()" id="<%= draftDetails.divisions[i].name %> draftAsTera">
+                            Draft as Tera Captain 
+                            <% if (draftDetails.teraCost > 0) { %>
+                                <br>
+                                Cost: <%= draftDetails.teraCost %>  Points
+                            <% } %>
+                            <% if (draftDetails.teraLimit > 0) { %>
+                                <br>
+                                Tera Captain Limit: <%= draftDetails.teraLimit %>  Points
+                            <% } %>
+                        </button>
+                        <div id="<%= draftDetails.divisions[i].name %> draftMons">
+                            
+                        </div>
+                    <% } %>
+                <% } %>
+            </div>
+        <% } %>
+    </nav>
+    <hr />
+    <section>
+        <h2><a href="../drafts.ejs">Unstarted Draft Leagues</a></h2>
+    </section>
+    <script>
+        let allPokemonNames = [
+            "Venusaur", "Charizard", "Blastoise", "Butterfree", "Beedrill", "Pidgeot", "Raticate", "Fearow", "Arbok", "Raichu",
+            "Sandslash", "Nidoqueen", "Nidoking", "Clefable", "Ninetales", "Wigglytuff", "Golbat", "Vileplume", "Parasect", "Venomoth",
+            "Dugtrio", "Persian", "Golduck", "Primeape", "Arcanine", "Poliwrath", "Alakazam", "Machamp", "Victreebel", "Tentacruel",
+            "Golem", "Rapidash", "Slowbro", "Magneton", "Farfetch'd", "Dodrio", "Dewgong", "Muk", "Cloyster", "Gengar",
+            "Hypno", "Kingler", "Electrode", "Exeggutor", "Marowak", "Hitmonlee", "Hitmonchan", "Lickitung", "Weezing", "Seaking",
+            "Kangaskhan", "Seadra", "Seaking", "Mr. Mime", "Scyther", "Electabuzz", "Magmar", "Pinsir", "Tauros", "Gyarados",
+            "Lapras", "Ditto", "Vaporeon", "Jolteon", "Flareon", "Omastar", "Kabutops", "Aerodactyl", "Snorlax", "Articuno",
+            "Zapdos", "Moltres", "Dragonite", "Mew", "Meganium", "Typhlosion", "Feraligatr", "Crobat", "Lanturn",
+            "Steelix", "Granbull", "Scizor", "Ursaring", "Magcargo", "Kingdra", "Donphan", "Stantler", "Smeargle", "Tyranitar",
+            "Celebi", "Sceptile", "Blaziken", "Swampert", "Exploud", "Hariyama", "Delcatty", "Sableye",
+            "Mawile", "Aggron", "Medicham", "Manectric", "Sharpedo", "Camerupt", "Flygon", "Altaria", "Claydol", "Cradily",
+            "Armaldo", "Milotic", "Castform", "Banette", "Dusclops", "Walrein", "Huntail", "Gorebyss", "Salamence", "Metagross",
+            "Regirock", "Registeel", "Regice", "Latias", "Latios", "Kyogre", "Groudon", "Rayquaza", "Jirachi", "Deoxys",
+            "Empoleon", "Infernape", "Torterra", "Staraptor", "Luxray", "Roserade", "Rampardos", "Bastiodon", "Wormadam", "Mothim",
+            "Armaldo", "Bibarel", "Kricketune", "Rampardos", "Bastiodon", "Wormadam", "Mothim", "Chatot", "Spiritomb", "Garchomp",
+            "Lucario", "Hippowdon", "Drapion", "Toxicroak", "Carnivine", "Lumineon", "Abomasnow", "Weavile", "Magnezone", "Lickilicky",
+            "Rhyperior", "Tangrowth", "Electivire", "Magmortar", "Togekiss", "Yanmega", "Leafeon", "Glaceon", "Gliscor", "Mamoswine",
+            "Porygon Z", "Gallade", "Probopass", "Dusknoir", "Froslass", "Rotom", "Uxie", "Mesprit", "Azelf", "Dialga",
+            "Palkia", "Heatran", "Regigigas", "Giratina", "Cresselia", "Phione", "Manaphy", "Darkrai", "Shaymin", "Arceus",
+            "Serperior", "Emboar", "Samurott", "Excadrill", "Conkeldurr", "Seismitoad", "Thundurus", "Landorus", "Tornadus", "Kyurem",
+            "Genesect", "Greninja", "Delphox", "Chesnaught", "Talonflame", "Vivillon", "Pangoro", "Aurorus", "Heliolisk", "Tyrantrum",
+            "Goodra", "Aegislash", "Malamar", "Barbaracle", "Dragalge", "Clawitzer", "Heliolisk", "Talonflame", "Vivillon", "Pangoro",
+            "Aurorus", "Heliolisk", "Tyrantrum", "Goodra", "Aegislash", "Malamar", "Barbaracle", "Dragalge", "Clawitzer", "Hawlucha",
+            "Dedenne", "Carbink", "Aromatisse", "Slurpuff", "Gourgeist", "Avalugg", "Noivern", "Xerneas", "Yveltal", "Zygarde",
+            "Diancie", "Volcanion", "Decidueye", "Incineroar", "Primarina", "Vikavolt", "Crabominable", "Oricorio", "Lycanroc", "Toxapex",
+            "Mudsdale", "Salazzle", "Tsareena", "Comfey", "Oranguru", "Passimian", "Lurantis", "Golisopod", "Palossand", "Silvally",
+            "Turtonator", "Togedemaru", "Mimikyu", "Bruxish", "Drampa", "Dhelmise", "Komala", "Turtonator", "Togedemaru", "Mimikyu",
+            "Bruxish", "Drampa", "Dhelmise", "Komala", "Turtonator", "Togedemaru", "Mimikyu", "Bruxish", "Drampa", "Dhelmise",
+            "Turtonator", "Togedemaru", "Mimikyu", "Bruxish", "Drampa", "Dhelmise", "Turtonator", "Togedemaru", "Mimikyu", "Bruxish",
+            "Drampa", "Dhelmise", "Jangmo o", "Hakamo o", "Kommo o", "Tapu Koko", "Tapu Lele", "Tapu Bulu", "Tapu Fini", "Cosmoem",
+            "Solgaleo", "Lunala", "Necrozma", "Zacian", "Zamazenta", "Eternatus", "Annihilape", "Arboliva", "Armarouge", "Baxcalibur", 
+            "Bellibolt", "Bombirdier", "Brambleghast", "Brute Bonnet", "Ceruledge", "Cetitan", "Chi Yu", "Chien Pao", "Clodsire", "Cyclizar", 
+            "Dachsbun", "Dipplin", "Dondozo", "Dudunsparce", "Espathra", "Farigiraf", "Fezandipiti", "Flamigo", "Flutter Mane", "Garganacl", 
+            "Gholdengo", "Glimmora", "Grafaiai", "Great Tusk", "Houndstone", "Iron Bundle", "Iron Hands", "Iron Jugulis", "Iron Leaves", "Iron Moth", 
+            "Iron Thorns", "Iron Treads", "Iron Valiant", "Kilowattrel", "Kingambit", "Klawf", "Koraidon", "Lokix", "Mabosstiff", "Maushold", "Meowscarada", 
+            "Miraidon", "Munkidori", "Naclstack", "Ogerpon", "Oinkologne", "Okidogi", "Orthworm", "Palafin", "Pawmot", "Quaquaval", "Quaxwell", "Rabsca", 
+            "Revavroom", "Roaring Moon", "Sandy Shocks", "Scovillain", "Scream Tail", "Sinistcha", "Skeledirge", "Slither Wing", "Spidops", "Squawkabilly", 
+            "Tatsugiri", "Tauros Paldea Aqua", "Paldean Tauros Aqua", "Paldean Tauros Blaze", "Tauros Paldea Blaze", "Tauros Paldea", "Paldean Tauros", "Tauros Paldea Combat", "Paldean Tauros Combat", "Ting Lu", "Tinkaton", "Tinkatuff", "Toedscruel", 
+            "Ursaluna Bloodmoon", "Veluza", "Walking Wake", "Wo Chien", "Wugtrio", "Mega Venusaur", "Mega Charizard X", "Mega Charizard Y", "Mega Blastoise", "Mega Beedrill", "Mega Pidgeot", "Mega Alakazam", "Mega Slowbro", "Mega Gengar", "Mega Kangaskhan", "Mega Pinsir", "Mega Gyarados", "Mega Aerodactyl", "Mega Mewtwo X", "Mega Mewtwo Y", "Mega Ampharos", "Mega Steelix", "Mega Scizor", "Mega Heracross", "Mega Houndoom", "Mega Tyranitar", "Mega Sceptile", "Mega Blaziken", "Mega Swampert", "Mega Gardevoir", "Mega Sableye", "Mega Mawile", "Mega Aggron", "Mega Medicham", "Mega Manectric", "Mega Sharpedo", "Mega Camerupt", "Mega Altaria", "Mega Banette", "Mega Absol", "Mega Glalie", "Mega Salamence", "Mega Metagross", "Mega Latias", "Mega Latios", "Mega Rayquaza", "Mega Lopunny", "Mega Garchomp", "Mega Lucario", "Mega Abomasnow", "Mega Gallade", "Mega Audino", "Mega Diancie","Alolan Rattata", "Alolan Raticate", "Alolan Raichu", "Alolan Sandshrew", "Alolan Sandslash", "Alolan Vulpix", "Alolan Ninetales", "Alolan Diglett", "Alolan Dugtrio", "Alolan Meowth", "Alolan Persian", "Alolan Geodude", "Alolan Graveler", "Alolan Golem", "Alolan Grimer", "Alolan Muk", "Alolan Exeggutor", "Alolan Marowak", "Alolan Drowzee", "Alolan Hypno", "Alolan Cubone", "Alolan Marowak", "Rattata Alola", "Raticate Alola", "Raichu Alola", "Sandshrew Alola", "Sandslash Alola", "Vulpix Alola", "Ninetales Alola", "Diglett Alola", "Dugtrio Alola", "Meowth Alola", "Persian Alola", "Geodude Alola", "Graveler Alola", "Golem Alola", "Grimer Alola", "Muk Alola", "Exeggutor Alola", "Marowak Alola", "Drowzee Alola", "Hypno Alola", "Cubone Alola", "Marowak Alola", "Galarian Slowpoke", "Galarian Slowbro", "Galarian Farfetch'd", "Galarian Sirfetch'd", "Galarian Zigzagoon", "Galarian Linoone", "Galarian Obstagoon", "Galarian Weezing", "Galarian Mr. Mime", "Galarian Articuno", "Galarian Zapdos", "Galarian Moltres", "Galarian Slowking", "Slowpoke Galar", "Slowbro Galar", "Farfetch'd Galar", "Sirfetch'd Galar", "Zigzagoon Galar", "Linoone Galar", "Obstagoon Galar", "Weezing Galar", "Mr. Mime Galar", "Articuno Galar", "Zapdos Galar", "Moltres Galar", "Slowking Galar", "Hisuian Decidueye", "Hisuian Typhlosion", "Hisuian Samurott", "Hisuian Qwilfish", "Hisuian Lilligant", "Hisuian Sligoo", "Hisuian Goodra", "Hisuian Growlithe", "Hisuian Arcanine", "Hisuian Voltorb", "Hisuian Electrode", "Hisuian Sneasel", "Hisuian Avalugg", "Hisuian Zorua", "Hisuian Zoroark", "Hisuian Braviary", "Decidueye Hisui", "Typhlosion Hisui", "Samurott Hisui", "Qwilfish Hisui", "Lilligant Hisui", "Sligoo Hisui", "Goodra Hisui", "Growlithe Hisui", "Arcanine Hisui", "Voltorb Hisui", "Electrode Hisui", "Sneasel Hisui", "Avalugg Hisui", "Zorua Hisui", "Zoroark Hisui", "Braviary Hisui"
+        ];
+        let username;
+        async function loggedIn() {
+            const response = await fetch('../is-logged-in');
+            let data = await response.json();
+            if (data.loggedIn === true) {
+                document.getElementById('account-name').innerHTML = data.username + ": " + data.level;
+                username = data.username;
+            } else {
+                username = "guest";
+            }
+        }
+        loggedIn();
+    
+        async function register() {
+            console.log(document.getElementById('leagueID').innerHTML);
+            const league = {
+                "id": document.getElementById('leagueID').innerHTML
+            }
+            const options = {
+                method: 'post',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(league)
+            };
+            const response = await fetch('/registerForLeague', options);
+            document.getElementById('registerButton').innerHTML = "You are registered for this league";
+        }
+    
+        let registrationsToggle = false;
+        let playersToggle = false;
+        let pokemonToggle = false;
+        let divisionsToggle = false;
+        let matchupsToggle = false;
+    
+        function showInfo(x) {
+            if (x === 'registrations') {
+                if (!registrationsToggle) {
+                    document.getElementById('registrationsInfo').style.display = "block";
+                    document.getElementById('registrationsButton').innerHTML = "Hide Registrations";
+                } else {
+                    document.getElementById('registrationsInfo').style.display = "none";
+                    document.getElementById('registrationsButton').innerHTML = "Show Registrations";
+                }
+                registrationsToggle = !registrationsToggle;
+            }
+            if (x === 'players') {
+                if (!playersToggle) {
+                    document.getElementById('playersInfo').style.display = "block";
+                    document.getElementById('playersButton').innerHTML = "Hide Players";
+                } else {
+                    document.getElementById('playersInfo').style.display = "none";
+                    document.getElementById('playersButton').innerHTML = "Show Players";
+                }
+                playersToggle = !playersToggle;
+            }
+            if (x === 'pokemon') {
+                if (!pokemonToggle) {
+                    document.getElementById('pokemonInfo').style.display = "block";
+                    document.getElementById('pokemonButton').innerHTML = "Hide Pokemon";
+                } else {
+                    document.getElementById('pokemonInfo').style.display = "none";
+                    document.getElementById('pokemonButton').innerHTML = "Show Pokemon";
+                }
+                pokemonToggle = !pokemonToggle;
+            }
+            if (x === 'divisions') {
+                if (!divisionsToggle) {
+                    document.getElementById('divisionsInfo').style.display = "block";
+                    document.getElementById('divisionsButton').innerHTML = "Hide Divisions";
+                } else {
+                    document.getElementById('divisionsInfo').style.display = "none";
+                    document.getElementById('divisionsButton').innerHTML = "Show Divisions";
+                }
+                divisionsToggle = !divisionsToggle;
+            }
+            if (x === 'matchups') {
+                if (!matchupsToggle) {
+                    document.getElementById('matchupsInfo').style.display = "block";
+                    document.getElementById('matchupsButton').innerHTML = "Hide Player Info";
+                } else {
+                    document.getElementById('matchupsInfo').style.display = "none";
+                    document.getElementById('matchupsButton').innerHTML = "Show Player Info";
+                }
+                matchupsToggle = !matchupsToggle;
+            }
+        }
+
+//drafting functions
+        let pokemonList = [];
+        let draftLeaguePokemon = [];
+        let drafting = false;
+        let draftLeagueData;
+        let draftLeagueDataCopy;
+            async function getDraftLeagueData() {
+                console.log("Updating");
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/getDraftInfo', options);
+                const data = await response.json()
+                draftLeagueData = await data;
+                draftLeagueDataCopy = await data;
+                if (data.draft) {
+                    drafting = true;
+
+                    let divisionsInfo = draftLeagueData.divisions;
+                    let playerInfo = draftLeagueData.players;
+                    let draftPokemon = draftLeagueData.pokemon;
+                    pokemonList = [...draftPokemon];
+                    draftLeaguePokemon = [...draftPokemon];
+
+                    //set current drafter
+                    for (let i = 0; i < divisionsInfo.length; i++) {
+                        let drafterID = "currentDrafterText " + divisionsInfo[i].name;
+                        document.getElementById(drafterID).innerHTML = divisionsInfo[i].currentDrafter;
+                    }
+
+                    //dynamically update player info
+                    for (let i = 0; i < divisionsInfo.length; i++) {
+                        for (let j = 0; j < divisionsInfo[i].draftOrder.length; j++) {
+                            let elementToEdit = divisionsInfo[i].name + " " + j;
+                            for (let k = 0; k < playerInfo.length; k++) {
+                                if (divisionsInfo[i].draftOrder[j] === playerInfo[k].name) {
+                                    let playerID = elementToEdit + " 0";
+                                    let rosterID = elementToEdit + " 1";
+                                    let budgetID = elementToEdit + " 2";
+                                    //set player element
+                                    document.getElementById(playerID).innerHTML = playerInfo[k].name;
+                                    //set roster element
+                                    let rosterText = ""
+                                    for (let l = 0; l < playerInfo[k].roster.length; l++) {
+                                        if (l === 0) {
+                                            rosterText += playerInfo[k].roster[l];
+                                        } else {
+                                            rosterText += "<br>" + playerInfo[k].roster[l];
+                    
+                                        }
+                                        for (let m = 0; m < playerInfo[k].teraCaps.length; m++) {
+                                            if (playerInfo[k].teraCaps[m] === playerInfo[k].roster[l]) {
+                                                rosterText += " *";
+                                            }
+                                        }
+                                    }
+                                    document.getElementById(rosterID).innerHTML = rosterText;
+                                    //set budget element
+                                    document.getElementById(budgetID).innerHTML = "Budget: " + playerInfo[k].budget;
+                                }
+                            }
+                        }
+                    }
+                    //hide tera button
+                    if (draftLeagueData.draft) {
+                        for (let i = 0; i < divisionsInfo.length; i++) {
+                            let id = divisionsInfo[i].name + " draftAsTera";
+                            document.getElementById(id).style.display = "none";
+                        }
+                    }
+
+                    //make sure all draft buttons are deleted
+                    for (let i = 0; i < divisionsInfo.length; i++) {
+                        const deleteFrom = divisionsInfo[i].name + " draftMons";
+                        const parent = document.getElementById(deleteFrom); // Change 'parentElement' to your element's ID or use another method to obtain the reference.
+
+                        if (parent) {
+                            // Loop through child elements and remove them one by one
+                            while (parent.firstChild) {
+                                parent.removeChild(parent.firstChild);
+                            }
+                        }
+                    }
+
+                    //add draft buttons for current drafter
+                    let pokemon_buttons = "";
+                    let pokemon_list = [...draftPokemon];
+                    for (let div = 0; div < divisionsInfo.length; div++) {
+                        if (username === divisionsInfo[div].currentDrafter) {
+                            let canDraft = true;
+                            for (let i = 0; i < playerInfo.length; i++) {
+                                if (playerInfo[i].name === username) {
+                                    if (playerInfo[i].budget === 0) {
+                                        canDraft = false;
+                                    }
+                                    if (playerInfo[i].roster.length === draftLeagueData.monsLimit[1]) {
+                                        canDraft = false;
+                                    }
+                                }
+                            }
+
+                            if (canDraft) {
+                                let idTera = divisionsInfo[div].name + " draftAsTera";
+                                document.getElementById(idTera).style.display = "block";
+                                if (draftPokemon.length === 0) {
+                                    draftPokemon = [...pokemon_list];
+                                    
+                                }
+                                while (draftPokemon.length > 0) {
+                                    let highest = draftPokemon[0].cost;
+                                    for (let i = 0; i < draftPokemon.length; i++) {
+                                        if (draftPokemon[i].cost > highest) {
+                                            highest = draftPokemon[i].cost;
+                                        }
+                                    } 
+                                    let addTo = divisionsInfo[div].name + " draftMons";
+                                    let p = document.createElement('p');
+                                    p.innerHTML = highest.toString(10) + " pointers:";
+                                    p.setAttribute('class', 'points');
+                                    document.getElementById(addTo).appendChild(p);
+                                    for (let i = draftPokemon.length-1; i >= 0; i--) {
+                                        if (draftPokemon[i].cost === highest) {
+                                            let button = document.createElement('button');
+                                            let id;
+                                            let draftStatus = "undrafted";
+                                            for (let j = 0; j < pokemon_list.length; j++) {
+                                                if (pokemon_list[j].name === draftPokemon[i].name) {
+                                                    id = j;
+                                                    break;
+                                                }
+                                            }
+                                            if (pokemon_list[id].isDrafted[div]) {
+                                                draftStatus = "drafted";
+                                            }
+                                            button.setAttribute('class', draftStatus);
+                                            button.setAttribute('id', id.toString(10));
+                                            if (draftStatus === "undrafted") {
+                                                button.setAttribute("onclick", "draft(this.id)");
+                                            } else {
+                                                button.setAttribute("onclick", "failed()");
+                                            }
+                                            button.innerHTML = draftPokemon[i].name;
+                                            document.getElementById(addTo).appendChild(button);
+                                            draftPokemon.splice(i,1);
+                                        }
+                                    }
+                                }
+                            } 
+                            draft(-1)
+                        }
+                    }
+                }
+            }
+            function failed() {
+                alert("That pokemon has already been drafted");
+            }
+            let isTera = false;
+            function draftAsTera() {
+                isTera = !isTera;
+                alert(`Drafting as a tera captian: ${isTera}`)
+                console.log(`Tera Draft: ${isTera}`)
+            }
+
+            getDraftLeagueData();
+            setInterval(getDraftLeagueData, 60000);
+
+            async function draft(x) {
+                if (x === -1) {
+                    const league = {
+                            "id": document.getElementById('leagueID').innerHTML
+                        }
+                        const data = [league, x, isTera];
+                        const options = {
+                            method: 'post',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        };
+                        const response = await fetch('/draftMon', options);
+                        const status = await response.text();
+                        console.log(status);
+                } else {
+                    let problems = false;
+                    let pokemon_list = [...draftLeaguePokemon];
+                    //min draft requirements checker
+                    let budgetRemaining;
+                    let pokemonCost = pokemon_list[x].cost;
+                    let minMonsNum = draftLeagueData.monsLimit[0];
+                    let numDrafted;
+                    let minMonsLeftNeeded;
+                    for (let i = 0; i < draftLeagueData.players.length; i++) {
+                        if (draftLeagueData.players[i].name === username) {
+                            budgetRemaining = draftLeagueData.players[i].budget;
+                            numDrafted = draftLeagueData.players[i].roster.length;
+                            break;
+                        }
+                    }
+                    minMonsLeftNeeded = minMonsNum - numDrafted - 1;
+                    if (isTera) {
+                        pokemonCost += draftLeagueData.teraCost;
+                    }
+                    if (pokemonCost + minMonsLeftNeeded > budgetRemaining) {
+                        alert("You can't buy that pokemon and get the minimum amount of required pokemon");
+                    } else if (pokemonCost > budgetRemaining) {
+                        alert("You can't afford that pokemon");
+                    } else if (x === "skip") {
+                        const league = {
+                            "id": document.getElementById('leagueID').innerHTML
+                        }
+                        const data = [league, "skip", isTera];
+                        const options = {
+                            method: 'post',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        };
+                        const response = await fetch('/draftMon', options);
+                        const status = await response.text();
+                        console.log(status);
+                    } else {
+                        if (isTera) {
+                            let tera_limit = draftLeagueDataCopy.teraLimit;
+                            let verify = true;
+                            for (let i = 0; i < pokemon_list.length; i++) {
+                                if (pokemon_list[i] === pokemon_list[x]) {
+                                    if (pokemon_list[i].cost > tera_limit) {
+                                        alert("This pokemon cannot be tera captain");
+                                        verify = false;
+                                    }
+                                }
+                            }
+                            if (verify) {
+                                const league = {
+                                    "id": document.getElementById('leagueID').innerHTML
+                                }
+                                const data = [league, x, isTera];
+                                const options = {
+                                    method: 'post',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(data)
+                                };
+                                const response = await fetch('/draftMon', options);
+                                const status = await response.text();
+                                console.log(status);
+                                if (await status === "success") {
+                                    getDraftLeagueData();
+                                }
+                            }
+                        } else {
+                            const league = {
+                                "id": document.getElementById('leagueID').innerHTML
+                            }
+                            const data = [league, x, isTera];
+                            const options = {
+                                method: 'post',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(data)
+                            };
+                            const response = await fetch('/draftMon', options);
+                            const status = await response.text();
+                            console.log(status);
+                        }
+                    }
+                }
+            }
+        </script>
+        
+        <% if (perms === "mod" || perms === "admin") { %>
+            <script>
+    
+            //pokemon constructor
+            function Pokemon(name, cost, isDrafted){
+                this.name = name;
+                this.cost = cost;
+                this.isDrafted = isDrafted;
+            }
+    
+            let makePlayer = false;
+            let makeMod = false;
+            let staffPokemonToggle = false;
+            let finalizeBudgetToggle = false;
+            let monsRequirementsToggle = false;
+            let teraToggle = false;
+            let matchupsInfoToggle = false;
+            let subToggle = false;
+            function showStaffInfo(x) {
+                if (x === 'makePlayer') {
+                    if (!makePlayer) {
+                        document.getElementById('registrationsInfoStaff').style.display = "block";
+                        document.getElementById('makePlayer').innerHTML = "Hide Registrations";
+                    } else {
+                        document.getElementById('registrationsInfoStaff').style.display = "none";
+                        document.getElementById('makePlayer').innerHTML = "Add Player";
+                    }
+                    makePlayer = !makePlayer;
+                }
+                if (x === 'makeMod') {
+                    if (!makeMod) {
+                        document.getElementById('modInfoStaff').style.display = "block";
+                        document.getElementById('makeModButton').innerHTML = "Hide Make Mod";
+                    } else {
+                        document.getElementById('modInfoStaff').style.display = "none";
+                        document.getElementById('makeModButton').innerHTML = "Make Mod";
+                    }
+                    makeMod = !makeMod;
+                }
+                if (x === 'editPokemon') {
+                    if (!staffPokemonToggle) {
+                        document.getElementById('pokemonInfoStaff').style.display = "block";
+                        document.getElementById('editPokemon').innerHTML = "Hide Pokemon";
+                    } else {
+                        document.getElementById('pokemonInfoStaff').style.display = "none";
+                        document.getElementById('editPokemon').innerHTML = "Edit Pokemon";
+                    }
+                    staffPokemonToggle= !staffPokemonToggle;
+                }
+                if (x === 'finalizeBudget') {
+                    if (!finalizeBudgetToggle) {
+                        document.getElementById('budgetInfo').style.display = "block";
+                        document.getElementById('finalizeBudgetButton').innerHTML = "Hide Budget";
+                    } else {
+                        document.getElementById('budgetInfo').style.display = "none";
+                        document.getElementById('finalizeBudgetButton').innerHTML = "Edit Budget";
+                    }
+                    finalizeBudgetToggle = !finalizeBudgetToggle;
+                }
+                if (x === 'monRequirements') {
+                    if (!monsRequirementsToggle) {
+                        document.getElementById('monRequirements').style.display = "block";
+                        document.getElementById('editMonLimit').innerHTML = "Hide Mon # Requirement";
+                    } else {
+                        document.getElementById('monRequirements').style.display = "none";
+                        document.getElementById('editMonLimit').innerHTML = "Edit Mon # Requirement";
+                    }
+                    monsRequirementsToggle = !monsRequirementsToggle;
+                }
+                if (x === 'editTera') {
+                    if (!teraToggle) {
+                        document.getElementById('teraInfo').style.display = "block";
+                        document.getElementById('editTera').innerHTML = "Hide Tera Info";
+                    } else {
+                        document.getElementById('teraInfo').style.display = "none";
+                        document.getElementById('editTera').innerHTML = "Edit Tera Info";
+                    }
+                    teraToggle = !teraToggle;
+                }
+                if (x === 'editMatchups') {
+                    if (!matchupsInfoToggle) {
+                        document.getElementById('staffMatchupsInfo').style.display = "block";
+                        document.getElementById('editMatchups').innerHTML = "Hide Matchups Info";
+                    } else {
+                        document.getElementById('staffMatchupsInfo').style.display = "none";
+                        document.getElementById('editMatchups').innerHTML = "Edit Matchups Info";
+                    }
+                    matchupsInfoToggle = !matchupsInfoToggle;
+                }
+                if (x === 'addSub') {
+                    if (!subToggle) {
+                        document.getElementById('staffMatchupsInfo').style.display = "block";
+                        document.getElementById('editMatchups').innerHTML = "Hide Matchups Info";
+                    } else {
+                        document.getElementById('staffMatchupsInfo').style.display = "none";
+                        document.getElementById('editMatchups').innerHTML = "Edit Matchups Info";
+                    }
+                    subToggle = !subToggle;
+                }
+            }
+    
+            //player tools for staff
+            let divToAddPlayerTo = "0";
+
+            function setDiv(x) {
+                divToAddPlayerTo = Number(x);
+                console.log(divToAddPlayerTo);
+            }
+
+            let makePlayers = [];
+            function addPlayer(playerName) {
+                let isIn = false;
+                for (let i = 0; i < makePlayers.length; i++) {
+                    if (makePlayers[i][1] === playerName) {
+                        makePlayers.splice(i, 1);
+                        isIn = true;
+                    }
+                }
+                if (!isIn) {
+                    makePlayers.push([divToAddPlayerTo, playerName]);
+                    console.log(makePlayers);
+                }
+                let text = "";
+                for (let i = 0; i < makePlayers.length; i++) {
+                    if (i === 0) {
+                        text += makePlayers[i][0] + ": " + makePlayers[i][1];
+                    } else {
+                        text += ", " + makePlayers[i][0] + ": " + makePlayers[i][1];
+                    }
+                }
+                console.log(text);
+                document.getElementById('playersToAdd').innerHTML = text;
+            }
+            async function updatePlayers() {
+                console.log(makePlayers);
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const players = {
+                    "players": makePlayers
+                }
+    
+                const data = [league, players];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/updatePlayers', options);
+                document.getElementById('playersToAdd').innerHTML = "Updated, refresh to see changes";
+            }
+            //pokemon staff tools
+            //retrieve league pokemon
+            let pokemon_list = [];
+            function addMonsToList(data) {
+                for (let i = 0; i < data.length; i++) {
+                    pokemon_list.push(data[i]);
+                }
+            }
+            async function getPokemon() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                response = await fetch('/getPokemon', options);
+                let data = await response.json();
+                let finished = await addMonsToList(data);
+            }
+            getPokemon();
+            //end retrieve league pokemon
+            let editType = 'add'
+            function editPokemon(type) {
+                if (type === 'add') {
+                    editType = 'add';
+                    document.getElementById('cost').style.display = "block";
+                    document.getElementById('mode').innerHTML = "Add";
+    
+                    document.getElementById('pokemonCost').value = "";
+                } else {
+                    editType = 'delete';
+                    document.getElementById('cost').style.display = "none";
+                    document.getElementById('mode').innerHTML = "Delete";
+    
+                    document.getElementById('pokemonCost').value = "";
+                } 
+                console.log(editType);
+            }
+    
+            let pokemonToAdd = [];
+            let pokemonToDelete = [];
+            function updatePokemonLocal() {
+                let pokemon_name = document.getElementById('pokemonName').value;
+                if (pokemon_name != '') {
+                    let pokemon_names = pokemon_name.split(",");
+                    let split_pokemon = [];
+
+                    for (let i = 0; i < pokemon_names.length; i++) {
+                        const words = pokemon_names[i].split(" ").filter(word => word !== '');
+                        if (words.length > 0) {
+                            split_pokemon.push(...words);
+                        }
+                    }
+                    let pokemon_cost = Number(document.getElementById('pokemonCost').value);
+                    let num_divisions = Number(document.getElementById('leagueDivs').innerHTML);
+                    //for each pokemon, add them to addlist or deletelist
+                    for (let i = 0; i < split_pokemon.length; i++) {
+                        let pokemonFullName = "";
+                        let isIn = false;
+                        //find full pokemon name (for mons with 2 or 3 words in name)
+                        pokemonFullName = split_pokemon[i] + " " + split_pokemon[i+1] + " " + split_pokemon[i+2];
+                        for (let j = 0; j < allPokemonNames.length; j++) {
+                            if (pokemonFullName.toLowerCase() === allPokemonNames[j].toLowerCase()) {
+                                split_pokemon.splice(i+1,1);
+                                split_pokemon.splice(i+1,1);
+                                isIn = true;
+                            }
+                        }
+                        if (!isIn) {
+                            pokemonFullName = split_pokemon[i] + " " + split_pokemon[i+1];
+                            for (let j = 0; j < allPokemonNames.length; j++) {
+                                if (pokemonFullName.toLowerCase() === allPokemonNames[j].toLowerCase()) {
+                                    split_pokemon.splice(i+1, 1);
+                                    isIn = true;
+                                }
+                            }
+                        }
+                        if (!isIn) {
+                            pokemonFullName = split_pokemon[i];
+                        }
+                        ///////
+                        if (editType !== 'delete') {
+                            if (typeof pokemon_cost === "number") {
+                                let divs = [];
+                                for (let j = 0; j < num_divisions; j++) {
+                                    divs.push(false);
+                                }
+                                if (editType === 'add') {
+                                    pokemonToAdd.push(new Pokemon(pokemonFullName, pokemon_cost, divs)); // Create a new Pokemon object for each name
+                                } 
+                            } 
+                        } else {
+                            pokemonToDelete.push(pokemonFullName);
+                        }
+                    }
+                    console.log(pokemonToAdd);
+                    console.log(pokemonToDelete);
+                    let text = "Add: ";
+                    for (let i = 0; i < pokemonToAdd.length; i++) {
+                        text += pokemonToAdd[i].name + " " + pokemonToAdd[i].cost + ", "
+                    }
+                    text += "<br>Delete: "
+                    for (let i = 0; i < pokemonToDelete.length; i++) {
+                        text += pokemonToDelete[i] + ", ";
+                    }
+                    document.getElementById('pokemonCost').value = "";
+                    document.getElementById('pokemonName').value = "";
+                    document.getElementById('pokemonToEdit').innerHTML = text;
+                } else {
+                    alert('please add the name of a pokemon');
+                }
+            }
+    
+            async function updatePokemon() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const data = [league, pokemonToAdd, pokemonToDelete];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/updatePokemon', options);
+                document.getElementById('pokemonToEdit').innerHTML = "Updated, refresh to see changes";
+            }
+            //make draft mod
+            async function makeDraftMod() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const userToMod = document.getElementById('makeUserMod').value;
+                const data = [league, userToMod];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/makeLeagueMod', options);
+                document.getElementById('makeUserMod').value = "";
+                document.getElementById('modMade').innerHTML = "Updated, refresh to see changes";
+            }
+            //set ready for signups
+            async function readyForSignups() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/readyForSignups', options);
+                document.getElementById('readyForSignupsButton').style.display = "none";
+            }
+    
+            //set private/public
+            async function setPrivateToggle() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/privateToggle', options);
+                if (document.getElementById('private').innerHTML === "Make League Public") {
+                    document.getElementById('private').innerHTML = "Make League Private";
+                } else {
+                    document.getElementById('private').innerHTML = "Make League Public";
+                }
+            }
+//finalize budget
+            async function finalizeBudget() {
+                let budget = Number(document.getElementById('budget').value);
+                if (typeof budget === "number") {
+                    const league = {
+                        "id": document.getElementById('leagueID').innerHTML
+                    }
+                    let data = [league, budget];
+                    const options = {
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    };
+                    const response = await fetch('/finalizeBudget', options);
+                    document.getElementById('budgetEntered').innerHTML = "Budget finalized, please refresh";
+                    document.getElementById('budget').style.display = "none";
+                    document.getElementById('finalizeBudget').style.display = "none";
+                } else {
+                    alert("Make your budget a Number")
+                }
+            }
+
+            //start draft
+            async function startDraft() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/startDraft', options);
+                document.getElementById('startDraft').style.display = "none";
+            }
+
+            async function editMonLimit() {
+                let lowerLimit = Number(document.getElementById('lowerLimit').value);
+                let upperLimit = Number(document.getElementById('upperLimit').value);
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const data = [league, lowerLimit, upperLimit];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/editMonsLimit', options);
+                document.getElementById('monsLimitMessage').innerHTML = "Updated, refresh to see changes";
+            }
+
+            async function editTeraInfo() {
+                let teraCost = Number(document.getElementById('teraCost').value);
+                let teraLimit = Number(document.getElementById('teraLimit').value);
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const data = [league, teraCost, teraLimit];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/editTeraInfo', options);
+                document.getElementById('teraInfoBox').innerHTML = "Updated, refresh to see changes";
+            }
+//matchups functionality
+            let typeWeek = "regular"
+            function setWeek(x) {
+                if (x === "0") {
+                    typeWeek = "regular";
+                } else {
+                    typeWeek = "playoff"
+                }
+                console.log(typeWeek);
+            }
+            async function addWeek() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const data = [league, typeWeek];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/addWeek', options);
+                document.getElementById('weekAdded').innerHTML = "Updated, refresh to see changes";
+            }
+            async function randomizeDraft() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/randomizeDraft', options);
+                document.getElementById('randomized').innerHTML = "Randomized";
+            }
+
+            async function setMatchups() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/setMatchups', options);
+                document.getElementById('setMatchups').innerHTML = "Updated, please refresh";
+            }
+
+            async function addSub() {
+                if (makePlayers.length === 1) {
+                    const league = {
+                        "id": document.getElementById('leagueID').innerHTML
+                    }
+                    let sub = document.getElementById('subPlayer').value;
+                    let data = [league, sub, makePlayers[0][1]];
+                    const options = {
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    };
+                    const response = await fetch('/addSub', options);
+                    document.getElementById('addSub').innerHTML = "Updated, please refresh";
+                } else {
+                    "There is more than one player in the replacement list"
+                }
+            }
+            let matchupInfo;
+            async function getMatchupInfo() {
+                const league = {
+                        "id": document.getElementById('leagueID').innerHTML
+                    }
+                    const options = {
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(league)
+                    };
+                    let data = await fetch('/getMatchupInfo', options);
+                    matchupInfo = await data.json();
+                    matchupInfo = matchupInfo.matchups;
+                    console.log(await matchupInfo);
+                    document.getElementById('getMatchupInfo').style.display = "none";
+                    document.getElementById('editingMatchups').style.display = "block";
+            }
+
+            let divisionToEdit = 0;
+            let weekToEdit = 0;
+            let matchupToEdit = 0;
+            let whoWon = -1;
+            function setEditMatchups(a, x) {
+                if (x === 'division') {
+                    divisionToEdit = Number(a);
+                    console.log(`division set to ${divisionToEdit}`);
+                } else if (x === 'week') {
+                    weekToEdit = Number(a);
+                    console.log(`week set to ${weekToEdit}`);
+                } else if (x === 'matchup') {
+                    matchupToEdit = Number(a);
+                    console.log(`matchup set to ${matchupToEdit}`);
+                } else if (x === 'whoWon') {
+                    whoWon = Number(a);
+                    console.log(`player ${whoWon} won`);
+                }
+                console.log(matchupInfo[divisionToEdit][weekToEdit][matchupToEdit]);
+            }
+            let matchupText = "";
+            function addNewMatchup() {
+                let player1 = document.getElementById('player1').value;
+                let player2 = document.getElementById('player2').value;
+                let winner = whoWon;
+                let replay = document.getElementById('replay').value;
+                let replay2 = document.getElementById('replay2').value;
+                let replay3 = document.getElementById('replay3').value;
+                if (player1 != "") {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][1] = player1;
+                }
+                if (player2 != "") {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][2] = player2;
+                }
+                if (whoWon != -1) {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][3] = whoWon;
+                }
+                if (replay.length != "") {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][4] = replay;
+                }
+                if (replay2 != "") {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][5] = replay2;
+                }
+                if (replay3 != "") {
+                    matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][6] = replay3;
+                }
+                matchupText += matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][1] + " vs " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][2];
+                if (matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][3] === 1) {
+                    matchupText += "; " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][1] + " wins";
+                } else if (matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][3] === 2) {
+                    matchupText += "; " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][2] + " wins";
+                }
+                if (matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][4] != "") {
+                    matchupText += "; replay link: " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][4];
+                }
+                if (matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][5] != "") {
+                    matchupText += "; replay link: " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][5];
+                }
+                if (matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][6] != "") {
+                    matchupText += "; replay link: " + matchupInfo[divisionToEdit][weekToEdit][matchupToEdit][6];
+                }
+                matchupText += "<br>"
+                document.getElementById('changedMatchups').innerHTML = matchupText;
+            }
+
+            function addNewPoffMatchup() {
+                let player1 = document.getElementById('player1').value;
+                let player2 = document.getElementById('player2').value;
+                let winner = whoWon;
+                let replay = document.getElementById('replay').value;
+                let replay2 = document.getElementById('replay2').value;
+                let replay3 = document.getElementById('replay3').value;
+                let spot = matchupInfo[divisionToEdit][weekToEdit].length;
+                matchupInfo[divisionToEdit][weekToEdit][spot] = ["playoff", player1, player2, winner, replay, replay2, replay3];
+                console.log(matchupInfo);
+
+                matchupText += player1 + " vs " + player2;
+                if (winner === 1) {
+                    matchupText += "; " + player1 + " wins";
+                } else if (winner === 2) {
+                    matchupText += "; " + player2 + " wins";
+                }
+                if (replay != "") {
+                    matchupText += "; replay link: " + replay;
+                }
+                if (replay2 != "") {
+                    matchupText += "; replay link: " + replay2;
+                }
+                if (replay3 != "") {
+                    matchupText += "; replay link: " + replay3;
+                }
+                matchupText += "<br>"
+                document.getElementById('changedMatchups').innerHTML = matchupText;
+            }
+
+            async function updateMatchups() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const data = [league, matchupInfo];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/updateMatchups', options);
+                document.getElementById('matchupToServer').innerHTML = "Updated, please refresh";
+            }
+
+            async function startLeague() {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(league)
+                };
+                const response = await fetch('/startLeague', options);
+                document.getElementById('startLeague').style.display = "none";
+            }
+
+            async function forceSkip(x) {
+                const league = {
+                    "id": document.getElementById('leagueID').innerHTML
+                }
+                const div = Number(x);
+                const data = [league, x];
+                const options = {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                };
+                const response = await fetch('/forceSkip', options);
+                location.reload();
+            }
+
+            </script>
+        <% } %>
+</body>
+</html>
