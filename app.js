@@ -44,7 +44,7 @@ app.use(session({
 }))
 
 //connecting to database
-const DBlogin = 'mongodb+srv://derek:greubjkfrfd10@cluster0.bzbtemx.mongodb.net/user-data?retryWrites=true&w=majority';
+const DBlogin = '';
 mongoose.connect(DBlogin, {useNewUrlParser: true, useUnifiedTopology: true})
     .then((result) => app.listen(3000))
     .catch((err) => console.log(err));
